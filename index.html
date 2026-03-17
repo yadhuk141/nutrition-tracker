@@ -141,6 +141,8 @@
     .help-link:hover { text-decoration: underline; }
     .divider { height: 0.5px; background: var(--border); margin: 14px 0; }
 
+    .ai-indicator-ok  { font-size: 11px; padding: 3px 10px; border-radius: 99px; background: var(--success-bg); color: var(--success-text); white-space: nowrap; }
+    .ai-indicator-warn { font-size: 11px; padding: 3px 10px; border-radius: 99px; background: var(--warn-bg); color: var(--warn-text); white-space: nowrap; }
     @media (max-width: 480px) {
       .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .targets-grid { grid-template-columns: 1fr; }
@@ -192,7 +194,10 @@
       <div id="mealList"></div>
     </div>
     <div class="ai-section">
-      <div class="ai-label">✨ AI meal analysis — describe your meal and get instant nutrition estimates</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+        <div class="ai-label" style="margin-bottom:0;">✨ AI meal analysis — describe your meal and get instant nutrition estimates</div>
+        <span id="aiIndicator" class="ai-indicator-warn">⚠ No API key</span>
+      </div>
       <div class="input-row">
         <select id="aiMealTime">
           <option>Morning</option><option>Breakfast</option><option>Lunch</option>
@@ -371,7 +376,10 @@
       const uData = doc.data();
       data = uData.data || {};
       targets = uData.targets || targets;
-      if (uData.ai_settings) localStorage.setItem('nt_ai', JSON.stringify(uData.ai_settings));
+      if (uData.ai_settings && uData.ai_settings.key) {
+        localStorage.setItem('nt_ai', JSON.stringify(uData.ai_settings));
+        selectedProvider = uData.ai_settings.provider || 'gemini';
+      }
     }
     document.getElementById('tKcal').value = targets.kcal;
     document.getElementById('tProt').value = targets.prot;
@@ -391,18 +399,27 @@
   function updateApiStatus() {
     const saved = JSON.parse(localStorage.getItem('nt_ai') || '{}');
     const el = document.getElementById('apiStatus');
-    if (saved.key) {
-      el.textContent = `✓ API key saved`; el.className = 'api-status ok';
+    const indicator = document.getElementById('aiIndicator');
+    if (saved && saved.key) {
+      const providerName = saved.provider === 'anthropic' ? 'Claude' : 'Gemini';
+      el.innerHTML = `✓ ${providerName} API key active`; el.className = 'api-status ok';
+      if (indicator) { indicator.textContent = `✓ AI ready (${providerName})`; indicator.className = 'ai-indicator-ok'; }
     } else {
-      el.textContent = 'No API key saved.'; el.className = 'api-status missing';
+      el.textContent = 'No API key saved. Add one below to enable AI analysis.'; el.className = 'api-status missing';
+      if (indicator) { indicator.textContent = '⚠ No API key — go to Settings tab to add one'; indicator.className = 'ai-indicator-warn'; }
     }
   }
 
-  function saveSettings() {
-    const key = document.getElementById('apiKeyInput').value;
-    localStorage.setItem('nt_ai', JSON.stringify({ provider: selectedProvider, key }));
-    saveAll();
+  async function saveSettings() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key) { alert('Please paste a valid API key.'); return; }
+    const aiSettings = { provider: selectedProvider, key };
+    localStorage.setItem('nt_ai', JSON.stringify(aiSettings));
+    if (currentUser) {
+      await db.collection('users').doc(currentUser.uid).set({ ai_settings: aiSettings }, { merge: true });
+    }
     updateApiStatus();
+    alert('API key saved!');
   }
 
   function saveTargets() {
@@ -441,26 +458,45 @@
     const desc = document.getElementById('aiMealDesc').value.trim();
     if (!desc) return;
     const saved = JSON.parse(localStorage.getItem('nt_ai') || '{}');
-    if (!saved.key) { alert('Add API key in settings'); return; }
-    
+    if (!saved.key) { alert('No API key found. Go to the Settings tab and add your API key.'); return; }
+
     const btn = document.getElementById('analyzeBtn');
-    btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Analyzing...'; btn.disabled = true;
+    document.getElementById('errMsg').style.display = 'none';
+    cancelPreview();
 
     try {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${saved.key}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT(desc) }] }] })
-      });
-      const r = await res.json();
-      if (!res.ok) throw new Error(r.error?.message || `HTTP ${res.status}`);
-      const raw = r.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!raw) throw new Error('Empty response from Gemini. Please check your API key in Settings.');
+      let raw = '';
+      if (saved.provider === 'anthropic') {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': saved.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
+        });
+        if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+        const r = await res.json();
+        raw = r.content.map(c => c.text||'').join('');
+      } else {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${saved.key}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT(desc) }] }] })
+        });
+        if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+        const r = await res.json();
+        raw = r.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!raw) throw new Error('Empty response from Gemini. Please check your API key in Settings.');
+      }
       const meal = JSON.parse(raw.replace(/```json|```/g,'').trim());
       pendingMeal = { time: document.getElementById('aiMealTime').value, name: meal.name, kcal: Math.round(meal.kcal), prot: Math.round(meal.prot), carb: Math.round(meal.carb), fat: Math.round(meal.fat) };
       document.getElementById('pName').textContent = meal.name;
-      document.getElementById('pMacros').innerHTML = `<span><b>${meal.kcal}</b> kcal</span> <span><b>${meal.prot}g</b> P</span> <span><b>${meal.carb}g</b> C</span> <span><b>${meal.fat}g</b> F</span>`;
+      document.getElementById('pMacros').innerHTML = `<span><b>${meal.kcal}</b> kcal</span> <span><b>${meal.prot}g</b> protein</span> <span><b>${meal.carb}g</b> carbs</span> <span><b>${meal.fat}g</b> fat</span>`;
+      document.getElementById('pNote').textContent = meal.note || '';
       document.getElementById('aiPreview').style.display = 'block';
-    } catch(e) { alert('Analysis failed: ' + e.message); }
+    } catch(e) {
+      const errEl = document.getElementById('errMsg');
+      errEl.textContent = 'Analysis failed: ' + e.message;
+      errEl.style.display = 'block';
+    }
     btn.innerHTML = 'Analyze'; btn.disabled = false;
   }
 
