@@ -411,15 +411,22 @@
   }
 
   async function saveSettings() {
-    const key = document.getElementById('apiKeyInput').value.trim();
-    if (!key) { alert('Please paste a valid API key.'); return; }
+    const keyRaw = document.getElementById('apiKeyInput').value;
+    const key = keyRaw ? keyRaw.trim() : '';
+    if (!key) { alert('Please paste a valid API key first.'); return; }
     const aiSettings = { provider: selectedProvider, key };
-    localStorage.setItem('nt_ai', JSON.stringify(aiSettings));
-    if (currentUser) {
-      await db.collection('users').doc(currentUser.uid).set({ ai_settings: aiSettings }, { merge: true });
+    try {
+      localStorage.setItem('nt_ai', JSON.stringify(aiSettings));
+      if (currentUser) {
+        await db.collection('users').doc(currentUser.uid).set({ ai_settings: aiSettings }, { merge: true });
+        alert('API key saved to your account!');
+      } else {
+        alert('API key saved locally. (Note: you appear to be logged out — log in to sync across devices)');
+      }
+      updateApiStatus();
+    } catch(e) {
+      alert('Failed to save: ' + e.message);
     }
-    updateApiStatus();
-    alert('API key saved!');
   }
 
   function saveTargets() {
