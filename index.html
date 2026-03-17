@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nutrition Tracker</title>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,6 +31,25 @@
       }
     }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; padding: 1.5rem 1rem; }
+    
+    /* Login Overlay Styles */
+    #auth-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: var(--bg3); z-index: 1000; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .auth-card {
+      background: var(--bg); padding: 2rem; border-radius: var(--radius-lg);
+      width: 100%; max-width: 360px; border: 0.5px solid var(--border);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .auth-card h2 { margin-bottom: 1.5rem; text-align: center; font-size: 20px; }
+    .auth-card input { width: 100%; margin-bottom: 12px; display: block; }
+    .auth-card .btn { width: 100%; margin-top: 10px; }
+    .auth-toggle { font-size: 12px; text-align: center; margin-top: 15px; color: var(--blue); cursor: pointer; }
+    
+    #app-content { display: none; } /* Hidden until user logs in */
+
     .container { max-width: 720px; margin: 0 auto; }
     h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
     .sub { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
@@ -127,14 +149,27 @@
   </style>
 </head>
 <body>
-<div class="container">
+
+<div id="auth-overlay">
+  <div class="auth-card">
+    <h2 id="auth-title">Login</h2>
+    <input type="email" id="emailInput" placeholder="Email">
+    <input type="password" id="passwordInput" placeholder="Password">
+    <button class="btn btn-primary" id="auth-btn" onclick="handleAuth()">Login</button>
+    <div class="auth-toggle" id="auth-toggle" onclick="toggleAuthMode()">Don't have an account? Sign Up</div>
+    <div id="auth-error" class="err"></div>
+  </div>
+</div>
+
+<div id="app-content" class="container">
 
   <div class="top-row">
     <div>
       <h1>Nutrition dashboard</h1>
-      <div class="sub">Track daily intake for muscle recomposition & bulk</div>
+      <div class="sub" id="welcome-sub">Track daily intake for muscle recomposition & bulk</div>
     </div>
     <div class="date-controls">
+      <button class="btn btn-sm" onclick="logout()" style="margin-right:15px;">Logout</button>
       <button class="btn btn-sm" onclick="changeDay(-1)">&#8592;</button>
       <input type="date" id="datePicker">
       <button class="btn btn-sm" onclick="changeDay(1)">&#8594;</button>
@@ -150,7 +185,6 @@
     <button class="tab" onclick="switchTab('notes', this)">Notes</button>
   </div>
 
-  <!-- LOG -->
   <div id="panel-log" class="panel active">
     <div class="metrics" id="metricsRow"></div>
     <div class="card">
@@ -199,7 +233,6 @@
     </div>
   </div>
 
-  <!-- CHART -->
   <div id="panel-chart" class="panel">
     <div class="card">
       <div class="section-title">Last 7 days — calories & protein</div>
@@ -211,7 +244,6 @@
     </div>
   </div>
 
-  <!-- TARGETS -->
   <div id="panel-targets" class="panel">
     <div class="card">
       <div class="section-title">Daily targets</div>
@@ -224,168 +256,153 @@
     </div>
   </div>
 
-  <!-- SETTINGS -->
   <div id="panel-settings" class="panel">
     <div class="card">
       <div class="section-title">AI provider</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6;">Select your AI provider and paste your API key. Keys are stored locally in your browser only.</p>
-
       <div class="provider-cards">
         <div class="provider-card" id="card-gemini" onclick="selectProvider('gemini')">
           <div class="pname">Google Gemini</div>
-          <div class="pdesc">Fast and capable. Free tier available — no credit card needed to start.</div>
           <span class="pfree">Free tier</span>
         </div>
         <div class="provider-card" id="card-anthropic" onclick="selectProvider('anthropic')">
           <div class="pname">Anthropic Claude</div>
-          <div class="pdesc">Most accurate nutrition analysis. Pay-per-use, very cheap (~$0.002/meal).</div>
           <span class="ppaid">Paid</span>
-        </div>
-        <div class="provider-card" id="card-openai" onclick="selectProvider('openai')">
-          <div class="pname">OpenAI (ChatGPT)</div>
-          <div class="pdesc">GPT-4o mini is very affordable. Requires payment method.</div>
-          <span class="ppaid">Paid</span>
-        </div>
-        <div class="provider-card" id="card-openrouter" onclick="selectProvider('openrouter')">
-          <div class="pname">OpenRouter</div>
-          <div class="pdesc">Access many models. Free credits on signup, then pay-per-use.</div>
-          <span class="pfree">Free credits</span>
         </div>
       </div>
-
-      <div class="divider"></div>
-
-      <div id="providerInstructions" style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6;padding:10px;background:var(--bg2);border-radius:var(--radius);"></div>
-
       <div class="settings-field">
         <label>API Key</label>
-        <input type="password" id="apiKeyInput" placeholder="Paste your API key here..." autocomplete="off">
+        <input type="password" id="apiKeyInput" placeholder="Paste your API key here...">
       </div>
-
-      <div id="modelField" class="settings-field" style="display:none;">
-        <label>Model <span style="color:var(--text3);font-size:11px;">(optional — leave blank for default)</span></label>
-        <input type="text" id="modelInput" placeholder="">
-      </div>
-
-      <div style="display:flex;gap:8px;margin-top:4px;">
-        <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
-        <button class="btn" onclick="clearSettings()">Clear</button>
-      </div>
-      <div class="api-status missing" id="apiStatus" style="margin-top:10px;">No API key saved — select a provider and add your key above.</div>
+      <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
+      <div class="api-status missing" id="apiStatus">No API key saved.</div>
     </div>
   </div>
 
-  <!-- NOTES -->
   <div id="panel-notes" class="panel">
     <div class="card">
       <div class="section-title">Daily notes</div>
-      <textarea class="note-area" id="notesArea" placeholder="Training, sleep, energy levels..."></textarea>
+      <textarea class="note-area" id="notesArea"></textarea>
       <button class="btn btn-primary" style="margin-top:10px;" onclick="saveNotes()">Save notes</button>
     </div>
   </div>
 
 </div>
+
 <script>
+  // 1. FIREBASE CONFIGURATION (REPLACE WITH YOUR OWN)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAMiSbhSO0sxdk2oFM4we326r-MBt1xIZg",
+    authDomain: "nutrition-tracker-32d23.firebaseapp.com",
+    projectId: "nutrition-tracker-32d23",
+    storageBucket: "nutrition-tracker-32d23.firebasestorage.app",
+    messagingSenderId: "306807695092",
+    appId: "1:306807695092:web:dddff3809a93b65967e0a1"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let currentUser = null;
+  let isSignUp = false;
   let currentDate = new Date().toISOString().slice(0,10);
   let data = {}, targets = { kcal:2800, prot:150, carb:300, fat:70 };
   let weekChartInst = null, pendingMeal = null;
   let selectedProvider = 'gemini';
 
   const PROVIDERS = {
-    gemini: {
-      name: 'Google Gemini',
-      instructions: 'Get a free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="help-link">aistudio.google.com</a> — no credit card required. Use the free Gemini 1.5 Flash model.',
-      defaultModel: 'gemini-1.5-flash',
-      modelPlaceholder: 'gemini-1.5-flash'
-    },
-    anthropic: {
-      name: 'Anthropic Claude',
-      instructions: 'Get an API key at <a href="https://console.anthropic.com" target="_blank" class="help-link">console.anthropic.com</a>. Requires a payment method. Very cheap — ~$0.002 per meal analysis.',
-      defaultModel: 'claude-haiku-4-5-20251001',
-      modelPlaceholder: 'claude-haiku-4-5-20251001'
-    },
-    openai: {
-      name: 'OpenAI',
-      instructions: 'Get an API key at <a href="https://platform.openai.com/api-keys" target="_blank" class="help-link">platform.openai.com</a>. GPT-4o mini is the cheapest option.',
-      defaultModel: 'gpt-4o-mini',
-      modelPlaceholder: 'gpt-4o-mini'
-    },
-    openrouter: {
-      name: 'OpenRouter',
-      instructions: 'Get a free API key at <a href="https://openrouter.ai/keys" target="_blank" class="help-link">openrouter.ai</a>. Free credits on signup. Recommended model: google/gemini-flash-1.5.',
-      defaultModel: 'google/gemini-flash-1.5',
-      modelPlaceholder: 'google/gemini-flash-1.5'
-    }
+    gemini: { name: 'Google Gemini', defaultModel: 'gemini-1.5-flash' },
+    anthropic: { name: 'Anthropic Claude', defaultModel: 'claude-haiku-4-5-20251001' }
   };
 
+  // 2. AUTHENTICATION LOGIC
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      currentUser = user;
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('app-content').style.display = 'block';
+      document.getElementById('welcome-sub').textContent = `Logged in as ${user.email}`;
+      loadUserData();
+    } else {
+      currentUser = null;
+      document.getElementById('auth-overlay').style.display = 'flex';
+      document.getElementById('app-content').style.display = 'none';
+    }
+  });
+
+  async function handleAuth() {
+    const email = document.getElementById('emailInput').value;
+    const pass = document.getElementById('passwordInput').value;
+    const errEl = document.getElementById('auth-error');
+    errEl.style.display = 'none';
+    try {
+      if (isSignUp) await auth.createUserWithEmailAndPassword(email, pass);
+      else await auth.signInWithEmailAndPassword(email, pass);
+    } catch (e) {
+      errEl.textContent = e.message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  function toggleAuthMode() {
+    isSignUp = !isSignUp;
+    document.getElementById('auth-title').textContent = isSignUp ? 'Sign Up' : 'Login';
+    document.getElementById('auth-btn').textContent = isSignUp ? 'Sign Up' : 'Login';
+    document.getElementById('auth-toggle').textContent = isSignUp ? 'Have an account? Login' : "Don't have an account? Sign Up";
+  }
+
+  function logout() { auth.signOut(); }
+
+  // 3. CLOUD DATABASE SYNC
+  async function saveAll() {
+    if (!currentUser) return;
+    await db.collection('users').doc(currentUser.uid).set({
+      data: data,
+      targets: targets,
+      ai_settings: JSON.parse(localStorage.getItem('nt_ai') || '{}')
+    });
+    const b = document.getElementById('savedBadge');
+    b.style.opacity = 1; setTimeout(() => b.style.opacity = 0, 1500);
+  }
+
+  async function loadUserData() {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    if (doc.exists) {
+      const uData = doc.data();
+      data = uData.data || {};
+      targets = uData.targets || targets;
+      if (uData.ai_settings) localStorage.setItem('nt_ai', JSON.stringify(uData.ai_settings));
+    }
+    document.getElementById('tKcal').value = targets.kcal;
+    document.getElementById('tProt').value = targets.prot;
+    document.getElementById('tCarb').value = targets.carb;
+    document.getElementById('tFat').value = targets.fat;
+    updateApiStatus();
+    renderLog();
+  }
+
+  // 4. CORE APP LOGIC
   function selectProvider(p) {
     selectedProvider = p;
     document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
     document.getElementById('card-'+p).classList.add('selected');
-    const info = PROVIDERS[p];
-    document.getElementById('providerInstructions').innerHTML = info.instructions;
-    document.getElementById('modelInput').placeholder = info.modelPlaceholder;
-    document.getElementById('modelField').style.display = 'block';
-    const saved = getSavedProvider();
-    if (saved && saved.provider === p) {
-      document.getElementById('apiKeyInput').value = '••••••••••••••••';
-      document.getElementById('modelInput').value = saved.model || '';
-    } else {
-      document.getElementById('apiKeyInput').value = '';
-      document.getElementById('modelInput').value = '';
-    }
-  }
-
-  function getSavedProvider() {
-    try { return JSON.parse(localStorage.getItem('nt_ai') || 'null'); } catch(e){ return null; }
-  }
-
-  function saveSettings() {
-    const key = document.getElementById('apiKeyInput').value.trim();
-    if (!key || key.startsWith('•')) {
-      alert('Please paste a valid API key.'); return;
-    }
-    const model = document.getElementById('modelInput').value.trim();
-    localStorage.setItem('nt_ai', JSON.stringify({ provider: selectedProvider, key, model }));
-    updateApiStatus();
-    alert('Settings saved!');
-  }
-
-  function clearSettings() {
-    localStorage.removeItem('nt_ai');
-    document.getElementById('apiKeyInput').value = '';
-    document.getElementById('modelInput').value = '';
-    updateApiStatus();
   }
 
   function updateApiStatus() {
-    const saved = getSavedProvider();
+    const saved = JSON.parse(localStorage.getItem('nt_ai') || '{}');
     const el = document.getElementById('apiStatus');
-    if (saved && saved.key) {
-      el.textContent = `✓ ${PROVIDERS[saved.provider]?.name || saved.provider} API key saved — AI analysis enabled`;
-      el.className = 'api-status ok';
-      selectProvider(saved.provider);
+    if (saved.key) {
+      el.textContent = `✓ API key saved`; el.className = 'api-status ok';
     } else {
-      el.textContent = 'No API key saved — select a provider and add your key above.';
-      el.className = 'api-status missing';
+      el.textContent = 'No API key saved.'; el.className = 'api-status missing';
     }
   }
 
-  function loadAll() {
-    try { data = JSON.parse(localStorage.getItem('nt_data') || '{}'); } catch(e){ data={}; }
-    try { targets = JSON.parse(localStorage.getItem('nt_targets') || JSON.stringify(targets)); } catch(e){}
-    document.getElementById('tKcal').value = targets.kcal;
-    document.getElementById('tProt').value = targets.prot;
-    document.getElementById('tCarb').value = targets.carb;
-    document.getElementById('tFat').value  = targets.fat;
+  function saveSettings() {
+    const key = document.getElementById('apiKeyInput').value;
+    localStorage.setItem('nt_ai', JSON.stringify({ provider: selectedProvider, key }));
+    saveAll();
     updateApiStatus();
-    selectProvider('gemini');
-  }
-
-  function saveAll() {
-    localStorage.setItem('nt_data', JSON.stringify(data));
-    const b = document.getElementById('savedBadge');
-    b.style.opacity = 1; setTimeout(() => b.style.opacity = 0, 1500);
   }
 
   function saveTargets() {
@@ -393,22 +410,11 @@
     targets.prot = +document.getElementById('tProt').value;
     targets.carb = +document.getElementById('tCarb').value;
     targets.fat  = +document.getElementById('tFat').value;
-    localStorage.setItem('nt_targets', JSON.stringify(targets));
-    renderLog();
+    saveAll(); renderLog();
   }
 
-  function dayData(d) {
-    if (!data[d]) data[d] = { meals:[], notes:'' };
-    return data[d];
-  }
-
-  function totals(d) {
-    return dayData(d).meals.reduce((a,m) => ({
-      kcal:a.kcal+(+m.kcal||0), prot:a.prot+(+m.prot||0),
-      carb:a.carb+(+m.carb||0), fat:a.fat+(+m.fat||0)
-    }), {kcal:0,prot:0,carb:0,fat:0});
-  }
-
+  function dayData(d) { if (!data[d]) data[d] = { meals:[], notes:'' }; return data[d]; }
+  function totals(d) { return dayData(d).meals.reduce((a,m) => ({ kcal:a.kcal+(+m.kcal||0), prot:a.prot+(+m.prot||0), carb:a.carb+(+m.carb||0), fat:a.fat+(+m.fat||0) }), {kcal:0,prot:0,carb:0,fat:0}); }
   function pct(val, goal) { return goal > 0 ? Math.min(100, Math.round(val/goal*100)) : 0; }
   function barColor(p) { return p >= 90 ? '#1D9E75' : p >= 60 ? '#378ADD' : '#EF9F27'; }
 
@@ -423,188 +429,55 @@
     ];
     document.getElementById('metricsRow').innerHTML = metrics.map(m => {
       const p = pct(m.val, m.goal);
-      return `<div class="metric">
-        <div class="mlabel">${m.label}</div>
-        <div><span class="mval">${m.val}</span> <span class="munit">${m.unit}</span></div>
-        <div class="mgoal">${p}% of ${m.goal}${m.unit}</div>
-        <div class="pbar"><div class="pfill" style="width:${p}%;background:${barColor(p)};"></div></div>
-      </div>`;
+      return `<div class="metric"><div class="mlabel">${m.label}</div><div><span class="mval">${m.val}</span> <span class="munit">${m.unit}</span></div><div class="mgoal">${p}% of ${m.goal}${m.unit}</div><div class="pbar"><div class="pfill" style="width:${p}%;background:${barColor(p)};"></div></div></div>`;
     }).join('');
-    document.getElementById('mealList').innerHTML = dd.meals.length === 0
-      ? `<div class="empty">No meals logged yet.</div>`
-      : dd.meals.map((m,i) => `
-        <div class="meal-item">
-          <div class="mtime">${m.time}</div>
-          <div class="minfo">
-            <div class="mname">${m.name}</div>
-            <div class="mmacros">P: ${m.prot||0}g &nbsp; C: ${m.carb||0}g &nbsp; F: ${m.fat||0}g</div>
-          </div>
-          <div class="mkcal">${m.kcal||0} kcal</div>
-          <button class="del-btn" onclick="deleteMeal(${i})">&#215;</button>
-        </div>`).join('');
-    renderInsights(t);
+    document.getElementById('mealList').innerHTML = dd.meals.length === 0 ? `<div class="empty">No meals logged.</div>` : dd.meals.map((m,i) => `<div class="meal-item"><div class="mtime">${m.time}</div><div class="minfo"><div class="mname">${m.name}</div><div class="mmacros">P: ${m.prot}g C: ${m.carb}g F: ${m.fat}g</div></div><div class="mkcal">${m.kcal} kcal</div><button class="del-btn" onclick="deleteMeal(${i})">&#215;</button></div>`).join('');
   }
 
-  function renderInsights(t) {
-    const protPct = pct(t.prot, targets.prot), kcalPct = pct(t.kcal, targets.kcal);
-    if (t.kcal === 0) { document.getElementById('insightBox').innerHTML = 'Add meals to see insights.'; return; }
-    const protTag = protPct >= 80 ? '<span class="tag tag-ok">on track</span>' : '<span class="tag tag-warn">low</span>';
-    const kcalTag = kcalPct >= 80 ? '<span class="tag tag-ok">on track</span>' : kcalPct >= 50 ? '<span class="tag tag-warn">moderate</span>' : '<span class="tag tag-warn">low</span>';
-    let lines = [];
-    lines.push(`<b>Calories:</b> ${Math.round(t.kcal)} / ${targets.kcal} kcal ${kcalTag}`);
-    lines.push(`<b>Protein:</b> ${Math.round(t.prot)}g / ${targets.prot}g ${protTag} — ${targets.prot - Math.round(t.prot) > 0 ? (targets.prot - Math.round(t.prot)) + 'g still needed' : 'goal met!'}`);
-    if (protPct < 60) lines.push('⚠ Protein is well below target — add eggs, paneer, chicken, or a shake.');
-    if (kcalPct < 60) lines.push('⚠ Calories are low for a bulk — make dinner substantial.');
-    if (kcalPct >= 90 && protPct >= 90) lines.push('✓ Great day! Calories and protein are both on target.');
-    document.getElementById('insightBox').innerHTML = lines.join('<br>');
-  }
-
-  const PROMPT = (desc) => `You are a nutrition expert. A user ate: "${desc}". Estimate macronutrients based on typical serving sizes. Respond ONLY with a valid JSON object, no markdown, no backticks, no explanation: {"name":"short meal name","kcal":number,"prot":number,"carb":number,"fat":number,"note":"one sentence about assumptions"}`;
-
-  async function callGemini(key, model, desc) {
-    const m = model || 'gemini-1.5-flash';
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT(desc) }] }] })
-    });
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
-    const r = await res.json();
-    return r.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  }
-
-  async function callAnthropic(key, model, desc) {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({ model: model || 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
-    });
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
-    const r = await res.json();
-    return r.content.map(c => c.text||'').join('');
-  }
-
-  async function callOpenAI(key, model, desc) {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: model || 'gpt-4o-mini', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
-    });
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
-    const r = await res.json();
-    return r.choices?.[0]?.message?.content || '';
-  }
-
-  async function callOpenRouter(key, model, desc) {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: model || 'google/gemini-flash-1.5', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
-    });
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
-    const r = await res.json();
-    return r.choices?.[0]?.message?.content || '';
-  }
+  // 5. AI AND MANUAL MEALS
+  const PROMPT = (desc) => `You are a nutrition expert. User ate: "${desc}". Respond ONLY with JSON: {"name":"short name","kcal":number,"prot":number,"carb":number,"fat":number,"note":"one sentence"}`;
 
   async function analyzeMeal() {
     const desc = document.getElementById('aiMealDesc').value.trim();
     if (!desc) return;
-    const saved = getSavedProvider();
-    if (!saved || !saved.key) {
-      showErr('No API key found. Go to the Settings tab, select a provider, and add your key.'); return;
-    }
+    const saved = JSON.parse(localStorage.getItem('nt_ai') || '{}');
+    if (!saved.key) { alert('Add API key in settings'); return; }
+    
     const btn = document.getElementById('analyzeBtn');
-    btn.innerHTML = '<span class="spinner"></span>Analyzing...';
-    btn.disabled = true;
-    document.getElementById('errMsg').style.display = 'none';
-    cancelPreview();
+    btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
 
     try {
-      let raw = '';
-      const { provider, key, model } = saved;
-      if      (provider === 'gemini')     raw = await callGemini(key, model, desc);
-      else if (provider === 'anthropic')  raw = await callAnthropic(key, model, desc);
-      else if (provider === 'openai')     raw = await callOpenAI(key, model, desc);
-      else if (provider === 'openrouter') raw = await callOpenRouter(key, model, desc);
-      else throw new Error('Unknown provider');
-
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${saved.key}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT(desc) }] }] })
+      });
+      const r = await res.json();
+      const raw = r.candidates?.[0]?.content?.parts?.[0]?.text;
       const meal = JSON.parse(raw.replace(/```json|```/g,'').trim());
-      pendingMeal = {
-        time: document.getElementById('aiMealTime').value,
-        name: meal.name, kcal: Math.round(meal.kcal),
-        prot: Math.round(meal.prot), carb: Math.round(meal.carb), fat: Math.round(meal.fat)
-      };
+      pendingMeal = { time: document.getElementById('aiMealTime').value, name: meal.name, kcal: meal.kcal, prot: meal.prot, carb: meal.carb, fat: meal.fat };
       document.getElementById('pName').textContent = meal.name;
-      document.getElementById('pMacros').innerHTML = `
-        <span><b>${Math.round(meal.kcal)}</b> kcal</span>
-        <span><b>${Math.round(meal.prot)}g</b> protein</span>
-        <span><b>${Math.round(meal.carb)}g</b> carbs</span>
-        <span><b>${Math.round(meal.fat)}g</b> fat</span>`;
-      document.getElementById('pNote').textContent = meal.note || '';
+      document.getElementById('pMacros').innerHTML = `<span><b>${meal.kcal}</b> kcal</span> <span><b>${meal.prot}g</b> P</span>`;
       document.getElementById('aiPreview').style.display = 'block';
-    } catch(err) {
-      showErr('Analysis failed: ' + err.message);
-    }
+    } catch(e) { alert('Error: ' + e.message); }
     btn.innerHTML = 'Analyze'; btn.disabled = false;
   }
 
-  function showErr(msg) {
-    const el = document.getElementById('errMsg');
-    el.textContent = msg; el.style.display = 'block';
-  }
-
   function confirmMeal() {
-    if (!pendingMeal) return;
     dayData(currentDate).meals.push(pendingMeal);
     saveAll(); renderLog(); cancelPreview();
-    document.getElementById('aiMealDesc').value = '';
-    pendingMeal = null;
   }
 
-  function cancelPreview() {
-    document.getElementById('aiPreview').style.display = 'none';
-    pendingMeal = null;
-  }
+  function cancelPreview() { document.getElementById('aiPreview').style.display = 'none'; pendingMeal = null; }
 
   function addManual() {
-    const name = document.getElementById('manName').value.trim();
-    if (!name) return;
-    dayData(currentDate).meals.push({
-      time: document.getElementById('manTime').value, name,
-      kcal: +document.getElementById('manKcal').value || 0,
-      prot: +document.getElementById('manProt').value || 0,
-      carb: +document.getElementById('manCarb').value || 0,
-      fat:  +document.getElementById('manFat').value  || 0,
-    });
+    dayData(currentDate).meals.push({ time: document.getElementById('manTime').value, name: document.getElementById('manName').value, kcal: +document.getElementById('manKcal').value, prot: +document.getElementById('manProt').value, carb: +document.getElementById('manCarb').value, fat: +document.getElementById('manFat').value });
     saveAll(); renderLog();
-    ['manName','manKcal','manProt','manCarb','manFat'].forEach(id => document.getElementById(id).value='');
   }
 
   function deleteMeal(i) { dayData(currentDate).meals.splice(i,1); saveAll(); renderLog(); }
-  function saveNotes() { dayData(currentDate).notes = document.getElementById('notesArea').value; saveAll(); alert('Notes saved!'); }
-
-  function changeDay(n) {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate()+n);
-    currentDate = d.toISOString().slice(0,10);
-    renderLog();
-    document.getElementById('notesArea').value = dayData(currentDate).notes || '';
-  }
-
-  function switchTab(name, el) {
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    document.getElementById('panel-'+name).classList.add('active');
-    el.classList.add('active');
-    if (name === 'chart') renderWeekChart();
-    if (name === 'notes') document.getElementById('notesArea').value = dayData(currentDate).notes || '';
-    if (name === 'settings') updateApiStatus();
-  }
+  function saveNotes() { dayData(currentDate).notes = document.getElementById('notesArea').value; saveAll(); alert('Saved!'); }
+  function changeDay(n) { const d = new Date(currentDate); d.setDate(d.getDate()+n); currentDate = d.toISOString().slice(0,10); renderLog(); }
+  function switchTab(name, el) { document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); document.querySelectorAll('.tab').forEach(b => b.classList.remove('active')); document.getElementById('panel-'+name).classList.add('active'); el.classList.add('active'); if(name==='chart') renderWeekChart(); }
 
   function renderWeekChart() {
     const labels=[], kcalArr=[], protArr=[];
@@ -615,26 +488,17 @@
       const t = totals(ds);
       kcalArr.push(Math.round(t.kcal)); protArr.push(Math.round(t.prot));
     }
-    if (weekChartInst) { weekChartInst.destroy(); weekChartInst=null; }
+    if (weekChartInst) weekChartInst.destroy();
     weekChartInst = new Chart(document.getElementById('weekChart'), {
       data: { labels, datasets: [
-        { type:'bar',  data:kcalArr, backgroundColor:'#378ADD', yAxisID:'y', borderRadius:4 },
-        { type:'line', data:protArr, borderColor:'#1D9E75', backgroundColor:'transparent', pointBackgroundColor:'#1D9E75', yAxisID:'y2', tension:0.3, pointRadius:4 }
+        { type:'bar', data:kcalArr, backgroundColor:'#378ADD', yAxisID:'y' },
+        { type:'line', data:protArr, borderColor:'#1D9E75', yAxisID:'y2' }
       ]},
-      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
-        scales:{
-          y:  { position:'left',  title:{ display:true, text:'kcal',      font:{size:11} }, grid:{ color:'rgba(128,128,128,0.1)' } },
-          y2: { position:'right', title:{ display:true, text:'protein g', font:{size:11} }, grid:{ drawOnChartArea:false } }
-        }
-      }
+      options: { responsive:true, maintainAspectRatio:false, scales:{ y:{position:'left'}, y2:{position:'right', grid:{drawOnChartArea:false}} } }
     });
   }
 
-  loadAll(); renderLog();
-  document.getElementById('datePicker').addEventListener('change', function() {
-    currentDate = this.value; renderLog();
-    document.getElementById('notesArea').value = dayData(currentDate).notes || '';
-  });
+  document.getElementById('datePicker').addEventListener('change', function() { currentDate = this.value; renderLog(); });
 </script>
 </body>
 </html>
