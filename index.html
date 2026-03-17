@@ -452,13 +452,15 @@
         body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT(desc) }] }] })
       });
       const r = await res.json();
+      if (!res.ok) throw new Error(r.error?.message || `HTTP ${res.status}`);
       const raw = r.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!raw) throw new Error('Empty response from Gemini. Please check your API key in Settings.');
       const meal = JSON.parse(raw.replace(/```json|```/g,'').trim());
-      pendingMeal = { time: document.getElementById('aiMealTime').value, name: meal.name, kcal: meal.kcal, prot: meal.prot, carb: meal.carb, fat: meal.fat };
+      pendingMeal = { time: document.getElementById('aiMealTime').value, name: meal.name, kcal: Math.round(meal.kcal), prot: Math.round(meal.prot), carb: Math.round(meal.carb), fat: Math.round(meal.fat) };
       document.getElementById('pName').textContent = meal.name;
-      document.getElementById('pMacros').innerHTML = `<span><b>${meal.kcal}</b> kcal</span> <span><b>${meal.prot}g</b> P</span>`;
+      document.getElementById('pMacros').innerHTML = `<span><b>${meal.kcal}</b> kcal</span> <span><b>${meal.prot}g</b> P</span> <span><b>${meal.carb}g</b> C</span> <span><b>${meal.fat}g</b> F</span>`;
       document.getElementById('aiPreview').style.display = 'block';
-    } catch(e) { alert('Error: ' + e.message); }
+    } catch(e) { alert('Analysis failed: ' + e.message); }
     btn.innerHTML = 'Analyze'; btn.disabled = false;
   }
 
