@@ -7,75 +7,40 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #ffffff;
-      --bg2: #f5f5f3;
-      --bg3: #efefec;
-      --text: #1a1a18;
-      --text2: #6b6b67;
-      --text3: #9b9b96;
-      --border: rgba(0,0,0,0.12);
-      --border2: rgba(0,0,0,0.22);
-      --radius: 8px;
-      --radius-lg: 12px;
-      --green: #1D9E75;
-      --blue: #378ADD;
-      --amber: #EF9F27;
-      --red: #E24B4A;
-      --success-bg: #EAF3DE;
-      --success-text: #3B6D11;
-      --warn-bg: #FAEEDA;
-      --warn-text: #854F0B;
-      --danger-bg: #FCEBEB;
-      --danger-text: #A32D2D;
+      --bg: #ffffff; --bg2: #f5f5f3; --bg3: #efefec;
+      --text: #1a1a18; --text2: #6b6b67; --text3: #9b9b96;
+      --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+      --radius: 8px; --radius-lg: 12px;
+      --green: #1D9E75; --blue: #378ADD; --amber: #EF9F27; --red: #E24B4A;
+      --success-bg: #EAF3DE; --success-text: #3B6D11;
+      --warn-bg: #FAEEDA; --warn-text: #854F0B;
+      --danger-bg: #FCEBEB; --danger-text: #A32D2D;
     }
-
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #1c1c1a;
-        --bg2: #272725;
-        --bg3: #313130;
-        --text: #f0f0ec;
-        --text2: #a0a09b;
-        --text3: #6b6b67;
-        --border: rgba(255,255,255,0.12);
-        --border2: rgba(255,255,255,0.22);
-        --success-bg: #173404;
-        --success-text: #C0DD97;
-        --warn-bg: #412402;
-        --warn-text: #FAC775;
-        --danger-bg: #501313;
-        --danger-text: #F7C1C1;
+        --bg: #1c1c1a; --bg2: #272725; --bg3: #313130;
+        --text: #f0f0ec; --text2: #a0a09b; --text3: #6b6b67;
+        --border: rgba(255,255,255,0.12); --border2: rgba(255,255,255,0.22);
+        --success-bg: #173404; --success-text: #C0DD97;
+        --warn-bg: #412402; --warn-text: #FAC775;
+        --danger-bg: #501313; --danger-text: #F7C1C1;
       }
     }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg3);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 1.5rem 1rem;
-    }
-
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; padding: 1.5rem 1rem; }
     .container { max-width: 720px; margin: 0 auto; }
-
     h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
     .sub { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
-
     .top-row { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 1.25rem; }
     .date-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .date-controls input[type=date] { font-size: 13px; padding: 6px 10px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); }
     .saved { font-size: 11px; color: var(--green); opacity: 0; transition: opacity 0.4s; }
-
     .tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
     .tab { font-size: 12px; padding: 6px 14px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; transition: all 0.15s; }
     .tab:hover { background: var(--bg2); }
     .tab.active { background: var(--text); color: var(--bg); border-color: transparent; }
-
     .panel { display: none; }
     .panel.active { display: block; }
-
     .metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
     .metric { background: var(--bg2); border-radius: var(--radius); padding: 12px; }
     .metric .mlabel { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
@@ -84,10 +49,8 @@
     .metric .mgoal { font-size: 11px; color: var(--text3); margin-top: 3px; }
     .pbar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 6px; overflow: hidden; }
     .pfill { height: 100%; border-radius: 2px; transition: width 0.5s; }
-
     .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 10px; }
     .section-title { font-size: 14px; font-weight: 500; margin-bottom: 10px; }
-
     .meal-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
     .meal-item:last-child { border-bottom: none; }
     .mtime { font-size: 11px; color: var(--text3); min-width: 56px; padding-top: 2px; }
@@ -98,16 +61,14 @@
     .del-btn { background: none; border: none; color: var(--text3); font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1; }
     .del-btn:hover { color: var(--red); }
     .empty { font-size: 13px; color: var(--text3); padding: 8px 0; }
-
     .ai-section { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; }
     .ai-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
     .input-row { display: flex; gap: 8px; flex-wrap: wrap; }
-    select, input[type=text], input[type=number], textarea {
+    select, input[type=text], input[type=number], input[type=password], textarea {
       font-size: 13px; padding: 7px 10px; border-radius: var(--radius);
-      border: 0.5px solid var(--border2); background: var(--bg); color: var(--text);
-      font-family: inherit;
+      border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-family: inherit;
     }
-    input[type=text] { flex: 1; min-width: 140px; }
+    input[type=text], input[type=password] { flex: 1; min-width: 140px; }
     input[type=number] { width: 72px; }
     .btn { font-size: 13px; padding: 7px 16px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; color: var(--text); cursor: pointer; white-space: nowrap; font-family: inherit; transition: background 0.15s; }
     .btn:hover { background: var(--bg2); }
@@ -115,47 +76,53 @@
     .btn-primary:hover { opacity: 0.85; }
     .btn-sm { font-size: 12px; padding: 5px 12px; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
     .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(128,128,128,0.3); border-top-color: currentColor; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
     .preview { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 12px 14px; margin-top: 10px; display: none; }
     .preview-name { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
     .preview-macros { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text2); }
     .preview-macros b { color: var(--text); }
     .preview-note { font-size: 11px; color: var(--text3); margin-top: 6px; }
     .preview-actions { display: flex; gap: 8px; margin-top: 10px; }
-    .err { font-size: 12px; color: var(--danger-text); margin-top: 8px; display: none; }
-
+    .err { font-size: 12px; color: var(--danger-text); background: var(--danger-bg); padding: 8px 10px; border-radius: var(--radius); margin-top: 8px; display: none; }
     .manual-section { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
     .manual-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
     .manual-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .manual-row input[type=number] { width: 64px; }
-
     .insight-box { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; font-size: 13px; color: var(--text2); line-height: 1.7; }
     .insight-box b { color: var(--text); font-weight: 500; }
     .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; margin-left: 4px; }
     .tag-ok { background: var(--success-bg); color: var(--success-text); }
     .tag-warn { background: var(--warn-bg); color: var(--warn-text); }
-
     .chart-wrap { position: relative; width: 100%; height: 200px; }
-
     .targets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .targets-grid label { font-size: 12px; color: var(--text2); display: block; }
     .targets-grid input { width: 100%; margin-top: 4px; }
-
     textarea.note-area { width: 100%; min-height: 80px; resize: vertical; }
 
-    .api-key-section { margin-bottom: 1rem; }
-    .api-key-row { display: flex; gap: 8px; align-items: center; }
-    .api-key-row input[type=text] { flex: 1; font-family: monospace; font-size: 12px; }
-    .api-status { font-size: 11px; margin-top: 6px; }
-    .api-status.ok { color: var(--green); }
-    .api-status.missing { color: var(--amber); }
+    /* Settings */
+    .provider-cards { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; }
+    .provider-card { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; transition: all 0.15s; background: var(--bg); }
+    .provider-card:hover { border-color: var(--border2); }
+    .provider-card.selected { border-color: var(--blue); background: var(--bg2); }
+    .provider-card .pname { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+    .provider-card .pdesc { font-size: 11px; color: var(--text2); line-height: 1.4; }
+    .provider-card .pfree { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 99px; background: var(--success-bg); color: var(--success-text); margin-top: 4px; }
+    .provider-card .ppaid { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 99px; background: var(--warn-bg); color: var(--warn-text); margin-top: 4px; }
+    .settings-field { margin-bottom: 12px; }
+    .settings-field label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; }
+    .settings-field input { width: 100%; font-family: monospace; font-size: 12px; }
+    .api-status { font-size: 11px; margin-top: 6px; padding: 6px 10px; border-radius: var(--radius); }
+    .api-status.ok { background: var(--success-bg); color: var(--success-text); }
+    .api-status.missing { background: var(--warn-bg); color: var(--warn-text); }
+    .help-link { font-size: 12px; color: var(--blue); text-decoration: none; }
+    .help-link:hover { text-decoration: underline; }
+    .divider { height: 0.5px; background: var(--border); margin: 14px 0; }
 
     @media (max-width: 480px) {
       .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); }
       .targets-grid { grid-template-columns: 1fr; }
+      .provider-cards { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -183,16 +150,13 @@
     <button class="tab" onclick="switchTab('notes', this)">Notes</button>
   </div>
 
-  <!-- LOG TAB -->
+  <!-- LOG -->
   <div id="panel-log" class="panel active">
     <div class="metrics" id="metricsRow"></div>
-
     <div class="card">
       <div class="section-title">Meals</div>
       <div id="mealList"></div>
     </div>
-
-    <!-- AI Entry -->
     <div class="ai-section">
       <div class="ai-label">✨ AI meal analysis — describe your meal and get instant nutrition estimates</div>
       <div class="input-row">
@@ -214,8 +178,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Manual Entry -->
     <div class="manual-section">
       <div class="manual-title">Manual entry</div>
       <div class="manual-row">
@@ -223,7 +185,7 @@
           <option>Morning</option><option>Breakfast</option><option>Lunch</option>
           <option>Pre-workout</option><option>Post-workout</option><option>Dinner</option><option>Snack</option>
         </select>
-        <input type="text" id="manName" placeholder="Meal name" style="flex:2; min-width:120px;">
+        <input type="text" id="manName" placeholder="Meal name" style="flex:2;min-width:120px;">
         <input type="number" id="manKcal" placeholder="kcal" min="0">
         <input type="number" id="manProt" placeholder="P(g)" min="0">
         <input type="number" id="manCarb" placeholder="C(g)" min="0">
@@ -231,14 +193,13 @@
         <button class="btn btn-primary" onclick="addManual()">Add</button>
       </div>
     </div>
-
-    <div style="margin-top: 1rem;">
+    <div style="margin-top:1rem;">
       <div class="section-title">Insights</div>
       <div class="insight-box" id="insightBox">Add meals to see insights.</div>
     </div>
   </div>
 
-  <!-- CHART TAB -->
+  <!-- CHART -->
   <div id="panel-chart" class="panel">
     <div class="card">
       <div class="section-title">Last 7 days — calories & protein</div>
@@ -250,7 +211,7 @@
     </div>
   </div>
 
-  <!-- TARGETS TAB -->
+  <!-- TARGETS -->
   <div id="panel-targets" class="panel">
     <div class="card">
       <div class="section-title">Daily targets</div>
@@ -260,42 +221,155 @@
         <label>Carb goal (g)<input type="number" id="tCarb" value="300" onchange="saveTargets()"></label>
         <label>Fat goal (g)<input type="number" id="tFat" value="70" onchange="saveTargets()"></label>
       </div>
-      <p style="font-size:12px;color:var(--text2);margin-top:12px;">Used for progress bars and insights on the log tab.</p>
     </div>
   </div>
 
-  <!-- SETTINGS TAB -->
+  <!-- SETTINGS -->
   <div id="panel-settings" class="panel">
     <div class="card">
-      <div class="section-title">Anthropic API key</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.6;">Required for AI meal analysis. Your key is stored locally in your browser and never sent anywhere except directly to Anthropic's API.</p>
-      <div class="api-key-row">
-        <input type="text" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off">
-        <button class="btn btn-primary" onclick="saveApiKey()">Save</button>
-        <button class="btn" onclick="clearApiKey()">Clear</button>
+      <div class="section-title">AI provider</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6;">Select your AI provider and paste your API key. Keys are stored locally in your browser only.</p>
+
+      <div class="provider-cards">
+        <div class="provider-card" id="card-gemini" onclick="selectProvider('gemini')">
+          <div class="pname">Google Gemini</div>
+          <div class="pdesc">Fast and capable. Free tier available — no credit card needed to start.</div>
+          <span class="pfree">Free tier</span>
+        </div>
+        <div class="provider-card" id="card-anthropic" onclick="selectProvider('anthropic')">
+          <div class="pname">Anthropic Claude</div>
+          <div class="pdesc">Most accurate nutrition analysis. Pay-per-use, very cheap (~$0.002/meal).</div>
+          <span class="ppaid">Paid</span>
+        </div>
+        <div class="provider-card" id="card-openai" onclick="selectProvider('openai')">
+          <div class="pname">OpenAI (ChatGPT)</div>
+          <div class="pdesc">GPT-4o mini is very affordable. Requires payment method.</div>
+          <span class="ppaid">Paid</span>
+        </div>
+        <div class="provider-card" id="card-openrouter" onclick="selectProvider('openrouter')">
+          <div class="pname">OpenRouter</div>
+          <div class="pdesc">Access many models. Free credits on signup, then pay-per-use.</div>
+          <span class="pfree">Free credits</span>
+        </div>
       </div>
-      <div class="api-status" id="apiStatus"></div>
-      <p style="font-size:12px;color:var(--text3);margin-top:12px;">Get your API key at <a href="https://console.anthropic.com" target="_blank" style="color:var(--blue);">console.anthropic.com</a></p>
+
+      <div class="divider"></div>
+
+      <div id="providerInstructions" style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6;padding:10px;background:var(--bg2);border-radius:var(--radius);"></div>
+
+      <div class="settings-field">
+        <label>API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="Paste your API key here..." autocomplete="off">
+      </div>
+
+      <div id="modelField" class="settings-field" style="display:none;">
+        <label>Model <span style="color:var(--text3);font-size:11px;">(optional — leave blank for default)</span></label>
+        <input type="text" id="modelInput" placeholder="">
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
+        <button class="btn" onclick="clearSettings()">Clear</button>
+      </div>
+      <div class="api-status missing" id="apiStatus" style="margin-top:10px;">No API key saved — select a provider and add your key above.</div>
     </div>
   </div>
 
-  <!-- NOTES TAB -->
+  <!-- NOTES -->
   <div id="panel-notes" class="panel">
     <div class="card">
       <div class="section-title">Daily notes</div>
-      <textarea class="note-area" id="notesArea" placeholder="Training, sleep, energy levels, observations..."></textarea>
+      <textarea class="note-area" id="notesArea" placeholder="Training, sleep, energy levels..."></textarea>
       <button class="btn btn-primary" style="margin-top:10px;" onclick="saveNotes()">Save notes</button>
     </div>
   </div>
 
 </div>
-
 <script>
   let currentDate = new Date().toISOString().slice(0,10);
-  let data = {};
-  let targets = { kcal:2800, prot:150, carb:300, fat:70 };
-  let weekChartInst = null;
-  let pendingMeal = null;
+  let data = {}, targets = { kcal:2800, prot:150, carb:300, fat:70 };
+  let weekChartInst = null, pendingMeal = null;
+  let selectedProvider = 'gemini';
+
+  const PROVIDERS = {
+    gemini: {
+      name: 'Google Gemini',
+      instructions: 'Get a free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="help-link">aistudio.google.com</a> — no credit card required. Use the free Gemini 1.5 Flash model.',
+      defaultModel: 'gemini-1.5-flash',
+      modelPlaceholder: 'gemini-1.5-flash'
+    },
+    anthropic: {
+      name: 'Anthropic Claude',
+      instructions: 'Get an API key at <a href="https://console.anthropic.com" target="_blank" class="help-link">console.anthropic.com</a>. Requires a payment method. Very cheap — ~$0.002 per meal analysis.',
+      defaultModel: 'claude-haiku-4-5-20251001',
+      modelPlaceholder: 'claude-haiku-4-5-20251001'
+    },
+    openai: {
+      name: 'OpenAI',
+      instructions: 'Get an API key at <a href="https://platform.openai.com/api-keys" target="_blank" class="help-link">platform.openai.com</a>. GPT-4o mini is the cheapest option.',
+      defaultModel: 'gpt-4o-mini',
+      modelPlaceholder: 'gpt-4o-mini'
+    },
+    openrouter: {
+      name: 'OpenRouter',
+      instructions: 'Get a free API key at <a href="https://openrouter.ai/keys" target="_blank" class="help-link">openrouter.ai</a>. Free credits on signup. Recommended model: google/gemini-flash-1.5.',
+      defaultModel: 'google/gemini-flash-1.5',
+      modelPlaceholder: 'google/gemini-flash-1.5'
+    }
+  };
+
+  function selectProvider(p) {
+    selectedProvider = p;
+    document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('card-'+p).classList.add('selected');
+    const info = PROVIDERS[p];
+    document.getElementById('providerInstructions').innerHTML = info.instructions;
+    document.getElementById('modelInput').placeholder = info.modelPlaceholder;
+    document.getElementById('modelField').style.display = 'block';
+    const saved = getSavedProvider();
+    if (saved && saved.provider === p) {
+      document.getElementById('apiKeyInput').value = '••••••••••••••••';
+      document.getElementById('modelInput').value = saved.model || '';
+    } else {
+      document.getElementById('apiKeyInput').value = '';
+      document.getElementById('modelInput').value = '';
+    }
+  }
+
+  function getSavedProvider() {
+    try { return JSON.parse(localStorage.getItem('nt_ai') || 'null'); } catch(e){ return null; }
+  }
+
+  function saveSettings() {
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key || key.startsWith('•')) {
+      alert('Please paste a valid API key.'); return;
+    }
+    const model = document.getElementById('modelInput').value.trim();
+    localStorage.setItem('nt_ai', JSON.stringify({ provider: selectedProvider, key, model }));
+    updateApiStatus();
+    alert('Settings saved!');
+  }
+
+  function clearSettings() {
+    localStorage.removeItem('nt_ai');
+    document.getElementById('apiKeyInput').value = '';
+    document.getElementById('modelInput').value = '';
+    updateApiStatus();
+  }
+
+  function updateApiStatus() {
+    const saved = getSavedProvider();
+    const el = document.getElementById('apiStatus');
+    if (saved && saved.key) {
+      el.textContent = `✓ ${PROVIDERS[saved.provider]?.name || saved.provider} API key saved — AI analysis enabled`;
+      el.className = 'api-status ok';
+      selectProvider(saved.provider);
+    } else {
+      el.textContent = 'No API key saved — select a provider and add your key above.';
+      el.className = 'api-status missing';
+    }
+  }
 
   function loadAll() {
     try { data = JSON.parse(localStorage.getItem('nt_data') || '{}'); } catch(e){ data={}; }
@@ -305,13 +379,13 @@
     document.getElementById('tCarb').value = targets.carb;
     document.getElementById('tFat').value  = targets.fat;
     updateApiStatus();
+    selectProvider('gemini');
   }
 
   function saveAll() {
     localStorage.setItem('nt_data', JSON.stringify(data));
     const b = document.getElementById('savedBadge');
-    b.style.opacity = 1;
-    setTimeout(() => b.style.opacity = 0, 1500);
+    b.style.opacity = 1; setTimeout(() => b.style.opacity = 0, 1500);
   }
 
   function saveTargets() {
@@ -321,33 +395,6 @@
     targets.fat  = +document.getElementById('tFat').value;
     localStorage.setItem('nt_targets', JSON.stringify(targets));
     renderLog();
-  }
-
-  function saveApiKey() {
-    const key = document.getElementById('apiKeyInput').value.trim();
-    if (key) { localStorage.setItem('nt_apikey', key); updateApiStatus(); alert('API key saved!'); }
-  }
-
-  function clearApiKey() {
-    localStorage.removeItem('nt_apikey');
-    document.getElementById('apiKeyInput').value = '';
-    updateApiStatus();
-  }
-
-  function getApiKey() { return localStorage.getItem('nt_apikey') || ''; }
-
-  function updateApiStatus() {
-    const key = getApiKey();
-    const el = document.getElementById('apiStatus');
-    const inp = document.getElementById('apiKeyInput');
-    if (key) {
-      el.textContent = '✓ API key saved — AI analysis is enabled';
-      el.className = 'api-status ok';
-      inp.value = key.slice(0,12) + '••••••••••••••••••••';
-    } else {
-      el.textContent = '⚠ No API key — add one above to enable AI meal analysis';
-      el.className = 'api-status missing';
-    }
   }
 
   function dayData(d) {
@@ -367,9 +414,7 @@
 
   function renderLog() {
     document.getElementById('datePicker').value = currentDate;
-    const dd = dayData(currentDate);
-    const t = totals(currentDate);
-
+    const dd = dayData(currentDate), t = totals(currentDate);
     const metrics = [
       { label:'Calories', val:Math.round(t.kcal), unit:'kcal', goal:targets.kcal },
       { label:'Protein',  val:Math.round(t.prot), unit:'g',    goal:targets.prot },
@@ -385,7 +430,6 @@
         <div class="pbar"><div class="pfill" style="width:${p}%;background:${barColor(p)};"></div></div>
       </div>`;
     }).join('');
-
     document.getElementById('mealList').innerHTML = dd.meals.length === 0
       ? `<div class="empty">No meals logged yet.</div>`
       : dd.meals.map((m,i) => `
@@ -398,13 +442,11 @@
           <div class="mkcal">${m.kcal||0} kcal</div>
           <button class="del-btn" onclick="deleteMeal(${i})">&#215;</button>
         </div>`).join('');
-
     renderInsights(t);
   }
 
   function renderInsights(t) {
-    const protPct = pct(t.prot, targets.prot);
-    const kcalPct = pct(t.kcal, targets.kcal);
+    const protPct = pct(t.prot, targets.prot), kcalPct = pct(t.kcal, targets.kcal);
     if (t.kcal === 0) { document.getElementById('insightBox').innerHTML = 'Add meals to see insights.'; return; }
     const protTag = protPct >= 80 ? '<span class="tag tag-ok">on track</span>' : '<span class="tag tag-warn">low</span>';
     const kcalTag = kcalPct >= 80 ? '<span class="tag tag-ok">on track</span>' : kcalPct >= 50 ? '<span class="tag tag-warn">moderate</span>' : '<span class="tag tag-warn">low</span>';
@@ -417,62 +459,86 @@
     document.getElementById('insightBox').innerHTML = lines.join('<br>');
   }
 
+  const PROMPT = (desc) => `You are a nutrition expert. A user ate: "${desc}". Estimate macronutrients based on typical serving sizes. Respond ONLY with a valid JSON object, no markdown, no backticks, no explanation: {"name":"short meal name","kcal":number,"prot":number,"carb":number,"fat":number,"note":"one sentence about assumptions"}`;
+
+  async function callGemini(key, model, desc) {
+    const m = model || 'gemini-1.5-flash';
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT(desc) }] }] })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const r = await res.json();
+    return r.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+
+  async function callAnthropic(key, model, desc) {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({ model: model || 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const r = await res.json();
+    return r.content.map(c => c.text||'').join('');
+  }
+
+  async function callOpenAI(key, model, desc) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: model || 'gpt-4o-mini', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const r = await res.json();
+    return r.choices?.[0]?.message?.content || '';
+  }
+
+  async function callOpenRouter(key, model, desc) {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: model || 'google/gemini-flash-1.5', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+    const r = await res.json();
+    return r.choices?.[0]?.message?.content || '';
+  }
+
   async function analyzeMeal() {
     const desc = document.getElementById('aiMealDesc').value.trim();
     if (!desc) return;
-
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      showErr('No API key found. Go to the Settings tab and add your Anthropic API key.');
-      return;
+    const saved = getSavedProvider();
+    if (!saved || !saved.key) {
+      showErr('No API key found. Go to the Settings tab, select a provider, and add your key.'); return;
     }
-
     const btn = document.getElementById('analyzeBtn');
-    const errEl = document.getElementById('errMsg');
     btn.innerHTML = '<span class="spinner"></span>Analyzing...';
     btn.disabled = true;
-    errEl.style.display = 'none';
+    document.getElementById('errMsg').style.display = 'none';
     cancelPreview();
 
-    const prompt = `You are a nutrition expert. A user ate: "${desc}".
-Estimate the macronutrients based on typical serving sizes.
-Respond ONLY with a valid JSON object and nothing else — no markdown, no backticks, no explanation:
-{"name":"short clean meal name","kcal":number,"prot":number,"carb":number,"fat":number,"note":"brief one-sentence assumption about serving sizes"}`;
-
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 300,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
+      let raw = '';
+      const { provider, key, model } = saved;
+      if      (provider === 'gemini')     raw = await callGemini(key, model, desc);
+      else if (provider === 'anthropic')  raw = await callAnthropic(key, model, desc);
+      else if (provider === 'openai')     raw = await callOpenAI(key, model, desc);
+      else if (provider === 'openrouter') raw = await callOpenRouter(key, model, desc);
+      else throw new Error('Unknown provider');
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `HTTP ${res.status}`);
-      }
-
-      const result = await res.json();
-      const raw = result.content.map(c => c.text || '').join('').trim();
       const meal = JSON.parse(raw.replace(/```json|```/g,'').trim());
-
       pendingMeal = {
         time: document.getElementById('aiMealTime').value,
-        name: meal.name,
-        kcal: Math.round(meal.kcal),
-        prot: Math.round(meal.prot),
-        carb: Math.round(meal.carb),
-        fat:  Math.round(meal.fat)
+        name: meal.name, kcal: Math.round(meal.kcal),
+        prot: Math.round(meal.prot), carb: Math.round(meal.carb), fat: Math.round(meal.fat)
       };
-
       document.getElementById('pName').textContent = meal.name;
       document.getElementById('pMacros').innerHTML = `
         <span><b>${Math.round(meal.kcal)}</b> kcal</span>
@@ -481,19 +547,15 @@ Respond ONLY with a valid JSON object and nothing else — no markdown, no backt
         <span><b>${Math.round(meal.fat)}g</b> fat</span>`;
       document.getElementById('pNote').textContent = meal.note || '';
       document.getElementById('aiPreview').style.display = 'block';
-
     } catch(err) {
       showErr('Analysis failed: ' + err.message);
     }
-
-    btn.innerHTML = 'Analyze';
-    btn.disabled = false;
+    btn.innerHTML = 'Analyze'; btn.disabled = false;
   }
 
   function showErr(msg) {
     const el = document.getElementById('errMsg');
-    el.textContent = msg;
-    el.style.display = 'block';
+    el.textContent = msg; el.style.display = 'block';
   }
 
   function confirmMeal() {
@@ -513,8 +575,7 @@ Respond ONLY with a valid JSON object and nothing else — no markdown, no backt
     const name = document.getElementById('manName').value.trim();
     if (!name) return;
     dayData(currentDate).meals.push({
-      time: document.getElementById('manTime').value,
-      name,
+      time: document.getElementById('manTime').value, name,
       kcal: +document.getElementById('manKcal').value || 0,
       prot: +document.getElementById('manProt').value || 0,
       carb: +document.getElementById('manCarb').value || 0,
@@ -524,16 +585,8 @@ Respond ONLY with a valid JSON object and nothing else — no markdown, no backt
     ['manName','manKcal','manProt','manCarb','manFat'].forEach(id => document.getElementById(id).value='');
   }
 
-  function deleteMeal(i) {
-    dayData(currentDate).meals.splice(i,1);
-    saveAll(); renderLog();
-  }
-
-  function saveNotes() {
-    dayData(currentDate).notes = document.getElementById('notesArea').value;
-    saveAll();
-    alert('Notes saved!');
-  }
+  function deleteMeal(i) { dayData(currentDate).meals.splice(i,1); saveAll(); renderLog(); }
+  function saveNotes() { dayData(currentDate).notes = document.getElementById('notesArea').value; saveAll(); alert('Notes saved!'); }
 
   function changeDay(n) {
     const d = new Date(currentDate);
@@ -550,31 +603,25 @@ Respond ONLY with a valid JSON object and nothing else — no markdown, no backt
     el.classList.add('active');
     if (name === 'chart') renderWeekChart();
     if (name === 'notes') document.getElementById('notesArea').value = dayData(currentDate).notes || '';
+    if (name === 'settings') updateApiStatus();
   }
 
   function renderWeekChart() {
     const labels=[], kcalArr=[], protArr=[];
     for (let i=6;i>=0;i--) {
-      const d = new Date(currentDate);
-      d.setDate(d.getDate()-i);
+      const d = new Date(currentDate); d.setDate(d.getDate()-i);
       const ds = d.toISOString().slice(0,10);
       labels.push(ds.slice(5));
       const t = totals(ds);
-      kcalArr.push(Math.round(t.kcal));
-      protArr.push(Math.round(t.prot));
+      kcalArr.push(Math.round(t.kcal)); protArr.push(Math.round(t.prot));
     }
     if (weekChartInst) { weekChartInst.destroy(); weekChartInst=null; }
     weekChartInst = new Chart(document.getElementById('weekChart'), {
-      data: {
-        labels,
-        datasets: [
-          { type:'bar',  label:'Calories',    data:kcalArr, backgroundColor:'#378ADD', yAxisID:'y',  borderRadius:4 },
-          { type:'line', label:'Protein (g)', data:protArr, borderColor:'#1D9E75', backgroundColor:'transparent', pointBackgroundColor:'#1D9E75', yAxisID:'y2', tension:0.3, pointRadius:4 }
-        ]
-      },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{ display:false } },
+      data: { labels, datasets: [
+        { type:'bar',  data:kcalArr, backgroundColor:'#378ADD', yAxisID:'y', borderRadius:4 },
+        { type:'line', data:protArr, borderColor:'#1D9E75', backgroundColor:'transparent', pointBackgroundColor:'#1D9E75', yAxisID:'y2', tension:0.3, pointRadius:4 }
+      ]},
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
         scales:{
           y:  { position:'left',  title:{ display:true, text:'kcal',      font:{size:11} }, grid:{ color:'rgba(128,128,128,0.1)' } },
           y2: { position:'right', title:{ display:true, text:'protein g', font:{size:11} }, grid:{ drawOnChartArea:false } }
@@ -585,8 +632,7 @@ Respond ONLY with a valid JSON object and nothing else — no markdown, no backt
 
   loadAll(); renderLog();
   document.getElementById('datePicker').addEventListener('change', function() {
-    currentDate = this.value;
-    renderLog();
+    currentDate = this.value; renderLog();
     document.getElementById('notesArea').value = dayData(currentDate).notes || '';
   });
 </script>
