@@ -281,6 +281,13 @@
         <label for="apiKeyInput">API Key</label>
         <input type="text" id="apiKeyInput" placeholder="Paste your API key here..." autocomplete="off" style="width:100%;font-family:monospace;font-size:12px;">
       </div>
+      <div class="settings-field">
+        <label for="modelInput">Model name <span style="color:var(--text3);font-size:11px;">— leave blank for default</span></label>
+        <input type="text" id="modelInput" placeholder="e.g. gemini-2.0-flash" autocomplete="off" style="width:100%;font-family:monospace;font-size:12px;">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">
+          Gemini: <code>gemini-2.0-flash</code> &nbsp;·&nbsp; Claude: <code>claude-haiku-4-5-20251001</code>
+        </div>
+      </div>
       <div style="display:flex;gap:8px;margin-top:4px;">
         <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()">Save settings</button>
         <button class="btn" onclick="clearApiKey()">Clear</button>
@@ -385,6 +392,8 @@
       if (uData.ai_settings && uData.ai_settings.key) {
         localStorage.setItem('nt_ai', JSON.stringify(uData.ai_settings));
         selectedProvider = uData.ai_settings.provider || 'gemini';
+        const modelInput = document.getElementById('modelInput');
+        if (modelInput && uData.ai_settings.model) modelInput.value = uData.ai_settings.model;
       }
     }
     document.getElementById('tKcal').value = targets.kcal;
@@ -406,10 +415,13 @@
     const saved = JSON.parse(localStorage.getItem('nt_ai') || '{}');
     const el = document.getElementById('apiStatus');
     const indicator = document.getElementById('aiIndicator');
+    const modelInput = document.getElementById('modelInput');
     if (saved && saved.key) {
       const providerName = saved.provider === 'anthropic' ? 'Claude' : 'Gemini';
-      el.innerHTML = `✓ ${providerName} API key active`; el.className = 'api-status ok';
+      const modelName = saved.model || (saved.provider === 'anthropic' ? 'claude-haiku-4-5-20251001' : 'gemini-2.0-flash');
+      el.innerHTML = `✓ ${providerName} — <code style="font-size:11px;">${modelName}</code>`; el.className = 'api-status ok';
       if (indicator) { indicator.textContent = `✓ AI ready (${providerName})`; indicator.className = 'ai-indicator-ok'; }
+      if (modelInput && saved.model) modelInput.value = saved.model;
     } else {
       el.textContent = 'No API key saved. Add one below to enable AI analysis.'; el.className = 'api-status missing';
       if (indicator) { indicator.textContent = '⚠ No API key — go to Settings tab to add one'; indicator.className = 'ai-indicator-warn'; }
@@ -422,7 +434,9 @@
       if (!keyInput) { alert('Cannot find API key input field.'); return; }
       const key = keyInput.value ? keyInput.value.trim() : '';
       if (!key) { alert('Please paste a valid API key first.'); return; }
-      const aiSettings = { provider: selectedProvider || 'gemini', key };
+      const modelInput = document.getElementById('modelInput');
+      const model = modelInput ? modelInput.value.trim() : '';
+      const aiSettings = { provider: selectedProvider || 'gemini', key, model };
       localStorage.setItem('nt_ai', JSON.stringify(aiSettings));
       if (currentUser && db) {
         await db.collection('users').doc(currentUser.uid).set({ ai_settings: aiSettings }, { merge: true });
@@ -488,13 +502,14 @@
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': saved.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
+          body: JSON.stringify({ model: saved.model || 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role:'user', content: PROMPT(desc) }] })
         });
         if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
         const r = await res.json();
         raw = r.content.map(c => c.text||'').join('');
       } else {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${saved.key}`, {
+        const geminiModel = saved.model || 'gemini-2.0-flash';
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${saved.key}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT(desc) }] }] })
         });
