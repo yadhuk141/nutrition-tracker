@@ -264,22 +264,28 @@
   <div id="panel-settings" class="panel">
     <div class="card">
       <div class="section-title">AI provider</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6;">Select your provider and paste your API key. It will be saved to your account and persist across devices.</p>
       <div class="provider-cards">
-        <div class="provider-card" id="card-gemini" onclick="selectProvider('gemini')">
+        <div class="provider-card selected" id="card-gemini" onclick="selectProvider('gemini')">
           <div class="pname">Google Gemini</div>
+          <div class="pdesc">Free tier available at aistudio.google.com</div>
           <span class="pfree">Free tier</span>
         </div>
         <div class="provider-card" id="card-anthropic" onclick="selectProvider('anthropic')">
           <div class="pname">Anthropic Claude</div>
+          <div class="pdesc">Get key at console.anthropic.com</div>
           <span class="ppaid">Paid</span>
         </div>
       </div>
-      <div class="settings-field">
-        <label>API Key</label>
-        <input type="password" id="apiKeyInput" placeholder="Paste your API key here...">
+      <div class="settings-field" style="margin-top:14px;">
+        <label for="apiKeyInput">API Key</label>
+        <input type="text" id="apiKeyInput" placeholder="Paste your API key here..." autocomplete="off" style="width:100%;font-family:monospace;font-size:12px;">
       </div>
-      <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
-      <div class="api-status missing" id="apiStatus">No API key saved.</div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()">Save settings</button>
+        <button class="btn" onclick="clearApiKey()">Clear</button>
+      </div>
+      <div class="api-status missing" id="apiStatus" style="margin-top:10px;">No API key saved.</div>
     </div>
   </div>
 
@@ -316,7 +322,7 @@
   let selectedProvider = 'gemini';
 
   const PROVIDERS = {
-    gemini: { name: 'Google Gemini', defaultModel: 'gemini-1.5-flash' },
+    gemini: { name: 'Google Gemini', defaultModel: 'gemini-2.0-flash' },
     anthropic: { name: 'Anthropic Claude', defaultModel: 'claude-haiku-4-5-20251001' }
   };
 
@@ -411,21 +417,25 @@
   }
 
   async function saveSettings() {
-    const keyRaw = document.getElementById('apiKeyInput').value;
-    const key = keyRaw ? keyRaw.trim() : '';
-    if (!key) { alert('Please paste a valid API key first.'); return; }
-    const aiSettings = { provider: selectedProvider, key };
     try {
+      const keyInput = document.getElementById('apiKeyInput');
+      if (!keyInput) { alert('Cannot find API key input field.'); return; }
+      const key = keyInput.value ? keyInput.value.trim() : '';
+      if (!key) { alert('Please paste a valid API key first.'); return; }
+      const aiSettings = { provider: selectedProvider || 'gemini', key };
       localStorage.setItem('nt_ai', JSON.stringify(aiSettings));
-      if (currentUser) {
+      if (currentUser && db) {
         await db.collection('users').doc(currentUser.uid).set({ ai_settings: aiSettings }, { merge: true });
         alert('API key saved to your account!');
+      } else if (!currentUser) {
+        alert('API key saved locally only — you are not logged in so it cannot sync to cloud.');
       } else {
-        alert('API key saved locally. (Note: you appear to be logged out — log in to sync across devices)');
+        alert('API key saved locally — Firestore not available.');
       }
       updateApiStatus();
     } catch(e) {
-      alert('Failed to save: ' + e.message);
+      alert('Save failed: ' + e.message + '\n\nCheck console (F12) for details.');
+      console.error('saveSettings error:', e);
     }
   }
 
@@ -484,7 +494,7 @@
         const r = await res.json();
         raw = r.content.map(c => c.text||'').join('');
       } else {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${saved.key}`, {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${saved.key}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT(desc) }] }] })
         });
@@ -510,6 +520,16 @@
   function confirmMeal() {
     dayData(currentDate).meals.push(pendingMeal);
     saveAll(); renderLog(); cancelPreview();
+  }
+
+  function clearApiKey() {
+    localStorage.removeItem('nt_ai');
+    document.getElementById('apiKeyInput').value = '';
+    if (currentUser && db) {
+      db.collection('users').doc(currentUser.uid).set({ ai_settings: {} }, { merge: true });
+    }
+    updateApiStatus();
+    alert('API key cleared.');
   }
 
   function cancelPreview() { document.getElementById('aiPreview').style.display = 'none'; pendingMeal = null; }
